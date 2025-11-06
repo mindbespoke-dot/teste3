@@ -504,39 +504,58 @@ app.post('/api/ai/image-generation', verifyToken, checkSubscription(db), async (
   try {
     const { prompt, imageData } = req.body;
     
-    const { GoogleGenAI, Modality } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
-    
-    const parts = [];
-    
-    if (imageData) {
-      parts.push({
-        inlineData: {
-          data: imageData.split(',')[1],
-          mimeType: imageData.split(':')[1].split(';')[0]
-        }
-      });
-    }
-    parts.push({ text: prompt });
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: [{ role: 'user', parts }],
-      config: {
-        responseModalities: [Modality.IMAGE],
-      },
-    });
-    
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        res.json({ imageData: part.inlineData.data });
-        return;
+    try {
+      const { GoogleGenAI, Modality } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+      
+      const parts = [];
+      
+      if (imageData) {
+        parts.push({
+          inlineData: {
+            data: imageData.split(',')[1],
+            mimeType: imageData.split(':')[1].split(';')[0]
+          }
+        });
       }
+      parts.push({ text: prompt });
+      
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: [{ role: 'user', parts }],
+        config: {
+          responseModalities: [Modality.IMAGE],
+        },
+      });
+      
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          console.log('[Image Generation] Successfully used Nano Banana (Gemini 2.5 Flash Image)');
+          res.json({ imageData: part.inlineData.data });
+          return;
+        }
+      }
+      
+      throw new Error('No image returned from Nano Banana');
+    } catch (geminiError) {
+      console.log('[Image Generation] Nano Banana failed, falling back to DALL-E 3:', geminiError.message);
+      
+      const { default: OpenAI } = await import('openai');
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const response = await openai.images.generate({
+        model: 'dall-e-3',
+        prompt: prompt,
+        n: 1,
+        size: '1024x1024',
+        response_format: 'b64_json',
+      });
+      
+      console.log('[Image Generation] Successfully used DALL-E 3 as fallback');
+      res.json({ imageData: response.data[0].b64_json });
     }
-    
-    throw new Error('No image returned');
   } catch (error) {
-    console.error('Image generation error:', error);
+    console.error('Image generation error (all providers failed):', error);
     res.status(500).json({ error: 'Failed to generate image' });
   }
 });
