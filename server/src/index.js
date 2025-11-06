@@ -489,7 +489,7 @@ Importante:
 - Considere a solicitação do usuário: "${prompt}"`;
     
     const result = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-1.5-pro',
       contents: [{ role: 'user', parts: [imagePart, { text: systemPrompt }] }],
     });
     
