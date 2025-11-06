@@ -1,8 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 import db from './database.js';
 import { generateToken, verifyToken, requireAdmin, checkSubscription } from './auth.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3000;
@@ -63,6 +70,39 @@ app.post('/api/webhooks/cakto', express.raw({ type: 'application/json' }), (req,
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+app.use('/uploads', express.static(uploadsDir));
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens são permitidas (jpeg, jpg, png, webp)'));
+    }
+  }
+});
 
 app.post('/api/auth/register', async (req, res) => {
   try {
@@ -152,12 +192,46 @@ app.get('/api/profile', verifyToken, (req, res) => {
   res.json(profile);
 });
 
+app.post('/api/profile/upload-image', verifyToken, upload.single('profileImage'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Nenhuma imagem foi enviada' });
+    }
+    
+    const imageUrl = `/uploads/${req.file.filename}`;
+    
+    const existingProfile = db.prepare('SELECT * FROM user_profiles WHERE user_id = ?').get(req.user.id);
+    
+    if (existingProfile) {
+      db.prepare('UPDATE user_profiles SET profile_image_url = ? WHERE user_id = ?')
+        .run(imageUrl, req.user.id);
+    } else {
+      db.prepare('INSERT INTO user_profiles (user_id, profile_image_url) VALUES (?, ?)')
+        .run(req.user.id, imageUrl);
+    }
+    
+    console.log(`[Profile Image] User ${req.user.id} uploaded new profile image: ${imageUrl}`);
+    res.json({ success: true, imageUrl });
+  } catch (error) {
+    console.error('[Profile Image] Upload error:', error);
+    res.status(500).json({ error: 'Falha ao fazer upload da imagem' });
+  }
+});
+
 app.put('/api/profile', verifyToken, (req, res) => {
   const { name, bio, profile_image_url } = req.body;
   
   db.prepare('UPDATE users SET name = ? WHERE id = ?').run(name, req.user.id);
-  db.prepare('UPDATE user_profiles SET bio = ?, profile_image_url = ? WHERE user_id = ?')
-    .run(bio || null, profile_image_url || null, req.user.id);
+  
+  const existingProfile = db.prepare('SELECT * FROM user_profiles WHERE user_id = ?').get(req.user.id);
+  
+  if (existingProfile) {
+    db.prepare('UPDATE user_profiles SET bio = ?, profile_image_url = ? WHERE user_id = ?')
+      .run(bio || null, profile_image_url || null, req.user.id);
+  } else {
+    db.prepare('INSERT INTO user_profiles (user_id, bio, profile_image_url) VALUES (?, ?, ?)')
+      .run(req.user.id, bio || null, profile_image_url || null);
+  }
   
   res.json({ success: true });
 });

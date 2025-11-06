@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import { CloseIcon, UserIcon, LockClosedIcon, EmailIcon, CameraIcon } from './icons';
 import type { User } from '../types';
 
@@ -45,21 +46,54 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, user, onSave }) =>
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleSaveChanges = () => {
-    const updatedUser = {
-      ...user,
-      name: formData.name,
-      email: formData.email,
-      avatar: imagePreview || user.avatar,
-    };
-    onSave(updatedUser);
-    
-    let message = "Alterações salvas com sucesso!";
-    if (selectedFile) {
-        message = `Nova imagem de perfil "${selectedFile.name}" salva!`;
+  const handleSaveChanges = async () => {
+    try {
+      let profileImageUrl = user.avatar;
+      
+      if (selectedFile) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('profileImage', selectedFile);
+        
+        const uploadResponse = await axios.post('/api/profile/upload-image', formDataUpload, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        if (uploadResponse.data.success) {
+          profileImageUrl = uploadResponse.data.imageUrl;
+        }
+      }
+      
+      await axios.put('/api/profile', {
+        name: formData.name,
+        bio: '',
+        profile_image_url: profileImageUrl
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      const updatedUser = {
+        ...user,
+        name: formData.name,
+        email: formData.email,
+        avatar: profileImageUrl,
+      };
+      onSave(updatedUser);
+      
+      let message = "Alterações salvas com sucesso!";
+      if (selectedFile) {
+          message = `Nova imagem de perfil "${selectedFile.name}" salva!`;
+      }
+      alert(message);
+      onClose();
+    } catch (error) {
+      console.error('Erro ao salvar perfil:', error);
+      alert('Erro ao salvar alterações. Tente novamente.');
     }
-    alert(message);
-    onClose();
   };
 
 
