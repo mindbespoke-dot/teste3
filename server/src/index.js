@@ -265,6 +265,33 @@ app.delete('/api/lessons/:id', verifyToken, requireAdmin, (req, res) => {
 app.post('/api/lessons/:id/complete', verifyToken, (req, res) => {
   const { completed } = req.body;
   
+  if (completed) {
+    const currentLesson = db.prepare(
+      'SELECT id, course_id, order_index FROM lessons WHERE id = ?'
+    ).get(req.params.id);
+    
+    if (!currentLesson) {
+      return res.status(404).json({ error: 'Lesson not found' });
+    }
+    
+    const incompletePreviousLessons = db.prepare(`
+      SELECT l.id, l.title, l.order_index
+      FROM lessons l
+      LEFT JOIN lesson_progress lp ON l.id = lp.lesson_id AND lp.user_id = ?
+      WHERE l.course_id = ? 
+        AND l.order_index < ?
+        AND (lp.completed IS NULL OR lp.completed = 0)
+      ORDER BY l.order_index
+    `).all(req.user.id, currentLesson.course_id, currentLesson.order_index);
+    
+    if (incompletePreviousLessons.length > 0) {
+      return res.status(400).json({ 
+        error: 'Você precisa concluir as aulas anteriores primeiro',
+        nextLesson: incompletePreviousLessons[0]
+      });
+    }
+  }
+  
   const existing = db.prepare(
     'SELECT * FROM lesson_progress WHERE user_id = ? AND lesson_id = ?'
   ).get(req.user.id, req.params.id);

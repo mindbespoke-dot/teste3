@@ -46,13 +46,32 @@ const VideoPlayerView: React.FC<VideoPlayerViewProps> = ({ initialVideo, playlis
           }
         }
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update lesson progress:', error);
       setCompletedVideos(new Set(completedVideos));
+      
+      if (error.response?.status === 400) {
+        alert(error.response.data.error || 'Você precisa concluir as aulas anteriores primeiro');
+      } else {
+        alert('Erro ao atualizar progresso da aula');
+      }
     }
   };
   
+  const canMarkAsComplete = (videoId: number): boolean => {
+    const videoIndex = playlist.findIndex(v => v.id === videoId);
+    if (videoIndex === -1) return false;
+    
+    for (let i = 0; i < videoIndex; i++) {
+      if (!completedVideos.has(playlist[i].id)) {
+        return false;
+      }
+    }
+    return true;
+  };
+  
   const isCurrentVideoCompleted = completedVideos.has(currentVideo.id);
+  const canCompleteCurrentVideo = canMarkAsComplete(currentVideo.id);
   const progressPercentage = playlist.length > 0 ? (completedVideos.size / playlist.length) * 100 : 0;
 
   return (
@@ -92,11 +111,15 @@ const VideoPlayerView: React.FC<VideoPlayerViewProps> = ({ initialVideo, playlis
                 </div>
                 <button 
                     onClick={() => handleToggleComplete(currentVideo.id)}
+                    disabled={!isCurrentVideoCompleted && !canCompleteCurrentVideo}
                     className={`flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg shrink-0 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-green-500 ${
                         isCurrentVideoCompleted 
                         ? 'bg-green-800 text-white cursor-default' 
-                        : 'bg-green-600 text-white hover:bg-green-700'
+                        : canCompleteCurrentVideo
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : 'bg-gray-600 text-gray-300 cursor-not-allowed opacity-50'
                     }`}
+                    title={!canCompleteCurrentVideo && !isCurrentVideoCompleted ? 'Conclua as aulas anteriores primeiro' : ''}
                 >
                     {isCurrentVideoCompleted ? (
                         <>
