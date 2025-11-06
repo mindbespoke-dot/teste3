@@ -96,6 +96,12 @@ npm run dev
     - /api/ai/video-generation - Initiates video generation using Veo
     - /api/ai/video-status - Polls video generation status
   - **Frontend-Backend Architecture**: All AI agents now communicate through secure backend endpoints instead of direct browser-to-API calls, preventing exposure of GOOGLE_API_KEY in the frontend
+  - **API Key Standardization (2025-11-06)**: Padronizadas todas as referências de API key do Google Gemini para usar `GEMINI_API_KEY` consistentemente em todo o backend, corrigindo inconsistências anteriores com `GOOGLE_API_KEY` e `GOOGLE_IMAGE_API_KEY`
+  - **Sistema de Conclusão Sequencial de Aulas (2025-11-06)**: Implementado sistema que garante progressão ordenada nas aulas:
+    - Backend valida que todas as aulas anteriores (baseado em `order_index`) foram concluídas antes de permitir marcar uma aula como concluída
+    - Frontend desabilita visualmente o botão "Marcar como Concluída" para aulas que ainda não podem ser marcadas
+    - Usuários não podem mais "pular" aulas, garantindo aprendizado sequencial
+    - Mensagens de erro informativas quando tentam marcar uma aula fora de ordem
 
 ## Notes
 - This app was imported from AI Studio (https://ai.studio/apps/drive/16b5ElGbSprtdan1jbs4RNGAE78kxil0q)
