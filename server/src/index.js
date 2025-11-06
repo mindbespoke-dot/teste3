@@ -326,7 +326,7 @@ app.post('/api/ai/gemini-chat', verifyToken, checkSubscription(db), async (req, 
     const { message, history } = req.body;
     
     const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
     const contents = [];
     if (history && history.length > 0) {
@@ -368,7 +368,7 @@ app.post('/api/ai/chat-with-fallback', verifyToken, checkSubscription(db), async
     
     try {
       const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
       const contents = [];
       if (history && history.length > 0) {
@@ -448,7 +448,7 @@ app.post('/api/ai/image-analysis', verifyToken, checkSubscription(db), async (re
     const { imageData, prompt } = req.body;
     
     const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
     const imagePart = {
       inlineData: {
@@ -506,7 +506,7 @@ app.post('/api/ai/image-generation', verifyToken, checkSubscription(db), async (
     
     try {
       const { GoogleGenAI, Modality } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_IMAGE_API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
       const parts = [];
       
@@ -582,7 +582,7 @@ app.post('/api/ai/prompt-specialist', verifyToken, checkSubscription(db), async 
     `;
     
     const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-pro',
@@ -602,7 +602,7 @@ app.post('/api/ai/image-replicator', verifyToken, checkSubscription(db), async (
     const { imageData } = req.body;
     
     const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
     const imagePart = {
       inlineData: {
@@ -632,7 +632,7 @@ app.post('/api/ai/video-generation', verifyToken, checkSubscription(db), async (
     const { prompt, imageData } = req.body;
     
     const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
     const parts = [];
     
@@ -663,7 +663,7 @@ app.post('/api/ai/video-status', verifyToken, checkSubscription(db), async (req,
     const { operationName } = req.body;
     
     const { GoogleGenAI } = await import('@google/genai');
-    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
     const operation = await ai.operations.getVideosOperation({ 
       operation: { name: operationName } 
@@ -672,7 +672,7 @@ app.post('/api/ai/video-status', verifyToken, checkSubscription(db), async (req,
     if (operation.done) {
       const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
       if (downloadLink) {
-        const videoResponse = await fetch(`${downloadLink}&key=${process.env.GOOGLE_API_KEY}`);
+        const videoResponse = await fetch(`${downloadLink}&key=${process.env.GEMINI_API_KEY}`);
         const buffer = await videoResponse.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');
         res.json({ done: true, videoData: base64 });
