@@ -506,7 +506,7 @@ app.post('/api/ai/image-generation', verifyToken, checkSubscription(db), async (
     
     try {
       const { GoogleGenAI, Modality } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_IMAGE_API_KEY });
       
       const parts = [];
       
