@@ -456,9 +456,40 @@ app.post('/api/ai/image-analysis', verifyToken, checkSubscription(db), async (re
       }
     };
     
+    const systemPrompt = `Você é um analisador de imagens especializado em criar prompts estruturados para geração de imagens, seguindo o estilo do Google Whisk.
+
+Analise a imagem fornecida e crie um prompt detalhado e estruturado seguindo EXATAMENTE este formato:
+
+**[DESCRIÇÃO DO CONTEÚDO PRINCIPAL]**
+Descreva objetivamente os elementos principais da imagem, personagens, objetos, ações acontecendo.
+
+**[COMPOSIÇÃO E ENQUADRAMENTO]**
+Descreva o enquadramento, ângulo da câmera, perspectiva, posição dos elementos, regra dos terços, etc.
+
+**[ESTILO VISUAL / ARTE]**
+Identifique o estilo artístico: fotorrealista, ilustração, 3D, pixel art, aquarela, óleo, cartoon, anime, minimalista, etc.
+
+**[ILUMINAÇÃO E AMBIENTE]**
+Descreva a iluminação (natural, artificial, dourada, dramática, suave), temperatura de cor, atmosfera, mood.
+
+**[DETALHES TÉCNICOS]**
+Especifique detalhes como profundidade de campo, bokeh, nitidez, textura, qualidade, resolução sugerida.
+
+**[REFERÊNCIAS ARTÍSTICAS OU ESTILÍSTICAS]**
+Mencione artistas, movimentos artísticos, ou referências culturais relevantes (se aplicável).
+
+**[CONFIGURAÇÕES EXTRAS]**
+Sugira parâmetros adicionais como aspect ratio, peso de estilo, número de variações, etc.
+
+Importante: 
+- Seja extremamente detalhado e preciso
+- Use linguagem técnica quando apropriado
+- O prompt deve ser rico em detalhes visuais
+- Considere a solicitação do usuário: "${prompt}"`;
+    
     const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [imagePart, { text: prompt }] }],
+      model: 'gemini-2.0-flash-exp',
+      contents: [{ role: 'user', parts: [imagePart, { text: systemPrompt }] }],
     });
     
     res.json({ text: result.text });
