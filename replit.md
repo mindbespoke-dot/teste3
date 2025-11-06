@@ -102,6 +102,15 @@ npm run dev
     - Frontend desabilita visualmente o botão "Marcar como Concluída" para aulas que ainda não podem ser marcadas
     - Usuários não podem mais "pular" aulas, garantindo aprendizado sequencial
     - Mensagens de erro informativas quando tentam marcar uma aula fora de ordem
+  - **Sistema de Upload de Imagem de Perfil (2025-11-06)**: Implementado upload e armazenamento persistente de imagens de perfil:
+    - Backend utiliza multer para upload de imagens (jpeg, jpg, png, webp)
+    - Limite de 5MB por imagem
+    - Armazenamento em disco no diretório `/uploads`
+    - Endpoint POST `/api/profile/upload-image` para upload autenticado
+    - Imagens servidas via `/uploads` route estático
+    - Frontend (ProfileModal) faz upload assíncrono antes de salvar o perfil
+    - URL da imagem salva na tabela `user_profiles.profile_image_url`
+    - Tratamento de erros com feedback ao usuário
 
 ## Notes
 - This app was imported from AI Studio (https://ai.studio/apps/drive/16b5ElGbSprtdan1jbs4RNGAE78kxil0q)
